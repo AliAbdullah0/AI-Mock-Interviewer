@@ -12,7 +12,8 @@
 
 # testing
 /coverage
-
+/service.json
+service.json
 # next.js
 /.next/
 /out/

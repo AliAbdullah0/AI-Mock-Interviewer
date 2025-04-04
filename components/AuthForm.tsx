@@ -1,28 +1,40 @@
 "use client";
 
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
-import FormField from "./FormField";
+import { auth } from "@/firebase/client";
+import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+
+import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react"; // Import Loader Icon
+
+import { signIn, signUp } from "@/lib/actions/auth.action";
+import FormField from "./FormField";
 
 const authFormSchema = (type: FormType) => {
   return z.object({
     name: type === "sign-up" ? z.string().min(3) : z.string().optional(),
     email: z.string().email(),
-    password: z.string().min(6),
+    password: z.string().min(3),
   });
 };
-const AuthForm = ({ type }: { type: FormType }) => {
 
-  const router = useRouter()
+const AuthForm = ({ type }: { type: FormType }) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false); // State for loading
+
   const formSchema = authFormSchema(type);
-  const isSignIn = type === "sign-in";
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -32,31 +44,75 @@ const AuthForm = ({ type }: { type: FormType }) => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    setLoading(true);
     try {
       if (type === "sign-up") {
-        console.log("Signup ", values);
-        toast.success("Account Created Successfully!. Please sign in.")
-        router.push('/sign-in')
+        const { name, email, password } = data;
+
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const result = await signUp({
+          uid: userCredential.user.uid,
+          name: name!,
+          email,
+          password,
+        });
+
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+
+        toast.success("Account created successfully. Please sign in.");
+        router.push("/sign-in");
       } else {
-        console.log("Signin ", values);
-        toast.success("Signed In Successfully!.")
-        router.push('/')
+        const { email, password } = data;
+
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const idToken = await userCredential.user.getIdToken();
+        if (!idToken) {
+          toast.error("Sign in Failed. Please try again.");
+          return;
+        }
+
+        await signIn({
+          email,
+          idToken,
+        });
+
+        toast.success("Signed in successfully.");
+        router.push("/");
       }
     } catch (error) {
       console.log(error);
-      toast.error(`Something went wrong. Please try again.`);
+      toast.error(`There was an error: ${error}`);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  const isSignIn = type === "sign-in";
 
   return (
-    <div className=" lg:min-w-[566px]">
+    <div className="card-border lg:min-w-[566px]">
       <div className="flex flex-col gap-6 card py-14 px-10">
         <div className="flex flex-row gap-2 justify-center">
-          <Image src="/logo.svg" alt="logo" width={38} height={32} />
-          <h2 className="text-primary-100">X-Interview</h2>
+          <Image src="/logo.svg" alt="logo" height={32} width={38} />
+          <h2 className="text-primary-100">PrepWise</h2>
         </div>
-          <h3>Practice for job interviews with AI</h3>
+
+        <h3>Practice job interviews with AI</h3>
+
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -64,38 +120,47 @@ const AuthForm = ({ type }: { type: FormType }) => {
           >
             {!isSignIn && (
               <FormField
+                control={form.control}
                 name="name"
                 label="Name"
                 placeholder="Your Name"
-                control={form.control}
+                type="text"
               />
             )}
+
             <FormField
+              control={form.control}
               name="email"
               label="Email"
+              placeholder="Your email address"
               type="email"
-              placeholder="Your Email Address"
-              control={form.control}
             />
+
             <FormField
+              control={form.control}
               name="password"
               label="Password"
+              placeholder="Enter your password"
               type="password"
-              placeholder="Enter A Password"
-              control={form.control}
             />
-            <Button type="submit" className="btn">
-              {isSignIn ? "Sign In" : "Create an Account"}
+
+            <Button
+              className="btn flex items-center justify-center gap-2"
+              type="submit"
+              disabled={loading} // Disable button while loading
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : isSignIn ? "Sign In" : "Create an Account"}
             </Button>
           </form>
         </Form>
+
         <p className="text-center">
-          {isSignIn ? "Don't have an account?" : "Already have an account?"}
+          {isSignIn ? "No account yet?" : "Have an account already?"}
           <Link
+            href={!isSignIn ? "/sign-in" : "/sign-up"}
             className="font-bold text-user-primary ml-1"
-            href={isSignIn ? "/sign-up" : "/sign-in"}
           >
-            {isSignIn ? "Signup" : "Sign In"}
+            {!isSignIn ? "Sign In" : "Sign Up"}
           </Link>
         </p>
       </div>
