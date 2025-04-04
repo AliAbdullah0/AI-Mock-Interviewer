@@ -23,7 +23,7 @@ const RootLayout = async ({children}:{
           height={32}
           />
         </Link>
-        <h2 className='text-primary-100'>X Interview</h2>
+        <h2 className='text-primary-100'>Verve</h2>
         </div>
         <div className='flex items-center gap-2'>
           <Link href={'/'}><Button variant={'secondary'}>Home</Button></Link>
