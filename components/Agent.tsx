@@ -129,11 +129,11 @@ const Agent = ({
               <Phone
                 className={cn(
                   'w-5 h-5',
-                  callStatus === 'CONNECTING' && 'animate-pulse' 
+                  callStatus === 'CONNECTING' && 'animate-ring' 
                 )}
               />
               <span>
-                {isCallInactiveOrFinished ? 'Call' : '....'}
+                {isCallInactiveOrFinished ? 'Call' : ''}
               </span>
             </button>
           ) : (
