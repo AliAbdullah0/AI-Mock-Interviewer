@@ -1,10 +1,25 @@
 import InterviewCard from "@/components/InterviewCard";
 import { Button } from "@/components/ui/button";
 import { dummyInterviews } from "@/constants";
+import { getCurrentUser, getInterviewByUserId, getLatestInterviews } from "@/lib/actions/auth.action";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser()
+  const [interviews,latestInterviews] = await Promise.all([
+   await getInterviewByUserId(user?.id!),
+   await getLatestInterviews({userId:user?.id})
+  ])
+  let hasPastInterviews;
+  let hasUpcomingInterviews; 
+  if(!(interviews?.length || !(latestInterviews?.length))){
+     hasPastInterviews = false;
+     hasUpcomingInterviews = false;
+  }
+  hasPastInterviews = true;
+  hasUpcomingInterviews = true;
+
   return (
     <>
       <section className="card-cta">
@@ -27,9 +42,11 @@ export default function Home() {
           <h2>Your Interviews</h2>
           <div className="interviews-section">
             {
-            dummyInterviews.map((interview,i)=>(
+            hasPastInterviews ? interviews?.map((interview,i)=>(
               <InterviewCard {...interview} key={interview.id}/>
-            ))
+            )):(
+                <p>You haven&apos;t taken any interviews yet</p>
+              )
             }
           </div>
         </section>
@@ -38,11 +55,12 @@ export default function Home() {
           <h2>Take an Interview</h2>
           <div className="interviews-section">
           {
-            dummyInterviews.map((interview,i)=>(
+            hasUpcomingInterviews? latestInterviews?.map((interview,i)=>(
               <InterviewCard {...interview} key={interview.id}/>
-            ))
+            )):(
+              <p>No Upcoming Interviews.</p>
+            )
           }
-          {/* <p>You haven't taken any interviews yet.</p> */}
           </div>
         </section>
     </>

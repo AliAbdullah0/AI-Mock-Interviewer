@@ -78,6 +78,7 @@ const Agent = ({
           userId: userId
         }
       })
+      console.log("Connecting .....")
     }
 
     const handleDisconnect = async () => {
