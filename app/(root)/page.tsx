@@ -7,13 +7,18 @@ import Link from "next/link";
 
 export default async function Home() {
   const user = await getCurrentUser()
-  const [interviews, latestInterviews] = await Promise.all([
-    getInterviewByUserId(user?.id!),
-    getLatestInterviews({ userId: user?.id }),
-  ]);
-  
-  const hasPastInterviews = interviews?.length > 0;
-  const hasUpcomingInterviews = latestInterviews?.length > 0;
+  const [interviews,latestInterviews] = await Promise.all([
+   await getInterviewByUserId(user?.id!),
+   await getLatestInterviews({userId:user?.id})
+  ])
+  let hasPastInterviews;
+  let hasUpcomingInterviews; 
+  if(!(interviews?.length || !(latestInterviews?.length))){
+     hasPastInterviews = false;
+     hasUpcomingInterviews = false;
+  }
+  hasPastInterviews = true;
+  hasUpcomingInterviews = true;
 
   return (
     <>
