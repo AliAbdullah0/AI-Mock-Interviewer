@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 import { Phone } from 'lucide-react' // Import Phone icon from lucide-react
+import { interviewer } from '@/constants'
 
 enum CallStatus {
     INACTIVE = 'INACTIVE',
@@ -22,7 +23,9 @@ interface SavedMessage {
 const Agent = ({
     userName,
     userId,
-    type
+    type,
+    interviewId,
+    questions
 }: AgentProps) => {
 
     const router = useRouter()
@@ -65,20 +68,52 @@ const Agent = ({
         vapi.off('error', onError);
       }
     }, [])
-
+    const handleGenerateFeedback = async (messages:SavedMessage[])=>{
+      console.log('Generate feedback here');
+      const {success,id} = {
+        success:true,
+        id:'feedbackid'
+      }
+      if(success && id){
+        router.push(`/interview/${interviewId}/feedback`)
+      }else{
+        console.log('Error saving feedback.');
+        router.push('/')
+      }
+      
+    }
     useEffect(() => {
-      if (callStatus === CallStatus.FINISHED) router.push('/')
+      if(callStatus === CallStatus.FINISHED){
+        if(type==='generate'){
+          router.push('/')
+        }else{
+          handleGenerateFeedback(messages)
+        }
+      }
+      if (callStatus === CallStatus.FINISHED) router.push('/');
     }, [messages, callStatus, type, userId])
 
     const handleCall = async () => {
       setCallStatus(CallStatus.CONNECTING)
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
+      if(type==='generate'){
+        console.log("Connecting .....")
+        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+          variableValues: {
           username: userName,
           userId: userId
         }
       })
-      console.log("Connecting .....")
+    }else{
+      let formattedQuestions = '';
+      if(questions){
+        formattedQuestions = questions.map((question)=> `- ${question}`).join('\n')
+        await vapi.start(interviewer,{
+          variableValues:{
+            questions:formattedQuestions
+          }
+        })
+      }
+    }
     }
 
     const handleDisconnect = async () => {
