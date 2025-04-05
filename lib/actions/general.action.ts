@@ -39,20 +39,22 @@ export const createFeedback = async (params: CreateFeedbackParams) => {
                 "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
         });
 
-        const feedback = await db.collection('feedback').add({
-            interviewId,
-            userId,
-            totalScore,
-            strengths,
-            areasForImprovement,
-            finalAssessment,
-            createdAt:new Date().toISOString()
-        })
-
-        return {
-            success:true,
-            feedbackId:feedback.id
-        }
+        try {
+            const feedback = await db.collection('feedback').add({
+              interviewId,
+              userId,
+              totalScore,
+              strengths,
+              areasForImprovement,
+              finalAssessment,
+              createdAt: new Date().toISOString()
+            });
+            return { success: true, feedbackId: feedback.id };
+          } catch (firestoreErr) {
+            console.log("Firestore error:", firestoreErr);
+            return { success: false };
+          }
+          
     } catch (error) {
         console.log(error);
         return {
