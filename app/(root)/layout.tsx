@@ -17,7 +17,7 @@ const RootLayout = async ({children}:{
         <div className="flex items-center gap-2 ">
         <Link href={'/'} className='flex items-center gap-2'>
           <Image
-          src={'/logo.svg'}
+          src={'/logo2.png'}
           alt='Logo'
           width={38}
           height={32}
